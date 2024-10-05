@@ -44,7 +44,7 @@ RUN python -m venv /venv && \
 ENV PATH="/scripts:/venv/bin:$PATH"
 
 # Muda o usuário para duser
-USER duser
+USER root
 
 # Executa o arquivo scripts/commands.sh
 CMD ["commands.sh"]
