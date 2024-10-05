@@ -67,3 +67,29 @@ class GetImageURLView(APIView):
 
             case _:
                 raise ValueError("Invalid product code provided.")
+
+
+class GetProductsView(APIView):
+    authentication_classes = []
+    permission_classes = []
+
+    def get(self, request, format=None):
+        products = [
+            {
+                'id': '59,188',
+                'name': 'Aerosol optical thickness at 1610 nm, Deep Blue algorithm',
+            },
+            {
+                'id': '64,255',
+                'name': 'Phytoplankton Carbon',
+            },
+            {
+                'id': '5,6',
+                'name': 'Chlorophyll concentration'
+            },
+            {
+                'id': '10,36',
+                'name': 'Particulate Organic Carbon'
+            }
+        ]
+        return Response(products, status=status.HTTP_200_OK)
