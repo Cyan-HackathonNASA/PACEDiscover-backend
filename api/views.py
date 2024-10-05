@@ -3,6 +3,8 @@ from rest_framework.response import Response
 from rest_framework import status
 from api.serializers import ImageURLSerializer
 import calendar
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 # import requests
 
 
@@ -10,6 +12,20 @@ class ImageURLView(APIView):
     authentication_classes = []
     permission_classes = []
 
+    @swagger_auto_schema(
+        operation_description="Get image URL based on the provided query parameters.",
+        query_serializer=ImageURLSerializer,
+        responses={
+            200: openapi.Response('Successful response', openapi.Schema(
+                type=openapi.TYPE_OBJECT,
+                properties={
+                    'url': openapi.Schema(type=openapi.TYPE_STRING, description='Generated image URL')
+                }
+            )),
+            400: "Bad Request",
+            404: "Not Found",
+        }
+    )
     def get(self, request):
         serializer = ImageURLSerializer(data=request.query_params)
 
