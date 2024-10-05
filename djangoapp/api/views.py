@@ -1,13 +1,19 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from api.serializers import ImageURLSerializer
+from api.serializers import ImageURLSerializer, ChatMessageSerializer
 import calendar
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
+import openai
+import os
+import json
+import random
+import string
 # import requests
 
-
+CHAT_DIR = os.path.join(os.path.dirname(__file__), 'chats')
+PROMPT = "Teste"
 class ImageURLView(APIView):
     authentication_classes = []
     permission_classes = []
@@ -149,3 +155,64 @@ class PeriodView(APIView):
             },
         ]
         return Response(periods, status=status.HTTP_200_OK)
+
+
+
+class ChatGPTAPIView(APIView):
+    def post(self, request):
+        serializer = ChatMessageSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        chat_id = serializer.validated_data.get('chat_id')
+        new_message = serializer.validated_data.get('message')
+
+        # Define the path for the current chat file
+        chat_file_path = os.path.join(CHAT_DIR, f'{chat_id}.json')
+
+        # Load previous messages if the chat file exists
+        if os.path.exists(chat_file_path):
+            with open(chat_file_path, 'r') as chat_file:
+                previous_messages = json.load(chat_file)
+        else:
+            previous_messages = []
+            # Constrói o PROMPT de mensagens para a API do ChatGPT
+            messages = [
+                {"role": "system", "content": PROMPT}
+            ]
+
+        # Inclui mensagens anteriores no contexto, caso fornecidas
+        if previous_messages:
+            messages.extend(previous_messages)
+
+        # Adiciona a nova mensagem do usuário ao contexto
+        messages.append({"role": "user", "content": new_message})
+
+        try:
+            # Faz a chamada para a API do ChatGPT usando o modelo `gpt-3.5-turbo`
+            response = openai.ChatCompletion.create(
+            model="gpt-4o",
+            messages=messages,
+            max_tokens=150,
+            temperature=0.7,
+            )
+
+            # Extrai a resposta gerada
+            chatgpt_response = response.choices[0].message['content'].strip()
+
+            # Atualiza as mensagens com a resposta do assistente
+            updated_messages = messages + [{"role": "assistant", "content": chatgpt_response}]
+
+            # Salva as mensagens atualizadas no arquivo de chat
+            with open(chat_file_path, 'w') as chat_file:
+                json.dump(updated_messages, chat_file)
+
+            # Retorna a resposta e o contexto atualizado
+            return Response({
+            "chat_id": chat_id,
+            "message": new_message,
+            "response": chatgpt_response,
+            }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
