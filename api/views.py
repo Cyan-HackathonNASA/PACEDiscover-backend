@@ -10,7 +10,7 @@ class ImageURLView(APIView):
     authentication_classes = []
     permission_classes = []
 
-    def get(self, request, format=None):
+    def get(self, request):
         serializer = ImageURLSerializer(data=request.query_params)
 
         if serializer.is_valid():
@@ -73,7 +73,7 @@ class ProductView(APIView):
     authentication_classes = []
     permission_classes = []
 
-    def get(self, request, format=None):
+    def get(self, request):
         products = [
             {
                 'id': '59,188',
@@ -100,7 +100,7 @@ class ResolutionView(APIView):
     permission_classes = []
 
     # Get Resolution Choices View
-    def get(self, request, format=None):
+    def get(self, request):
         resolutions = [
             {
                 'name': '0.1-deg',
@@ -113,3 +113,23 @@ class ResolutionView(APIView):
             },
         ]
         return Response(resolutions, status=status.HTTP_200_OK)
+
+
+class PeriodView(APIView):
+    authentication_classes = []
+    permission_classes = []
+
+    # Get Resolution Choices View
+    def get(self, request):
+        periods = [
+            {
+                'name': 'daily',
+            },
+            {
+                'name': 'monthly',
+            },
+            {
+                'name': 'annual'
+            },
+        ]
+        return Response(periods, status=status.HTTP_200_OK)
