@@ -6,7 +6,7 @@ import calendar
 # import requests
 
 
-class GetImageURLView(APIView):
+class ImageURLView(APIView):
     authentication_classes = []
     permission_classes = []
 
@@ -69,7 +69,7 @@ class GetImageURLView(APIView):
                 raise ValueError("Invalid product code provided.")
 
 
-class GetProductsView(APIView):
+class ProductView(APIView):
     authentication_classes = []
     permission_classes = []
 
@@ -93,3 +93,23 @@ class GetProductsView(APIView):
             }
         ]
         return Response(products, status=status.HTTP_200_OK)
+
+
+class ResolutionView(APIView):
+    authentication_classes = []
+    permission_classes = []
+
+    # Get Resolution Choices View
+    def get(self, request, format=None):
+        resolutions = [
+            {
+                'name': '0.1-deg',
+            },
+            {
+                'name': '4km',
+            },
+            {
+                'name': '9km'
+            },
+        ]
+        return Response(resolutions, status=status.HTTP_200_OK)
