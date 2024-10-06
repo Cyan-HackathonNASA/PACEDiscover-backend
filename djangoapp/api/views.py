@@ -165,32 +165,17 @@ class ChatGPTAPIView(APIView):
         request_body=ChatMessageSerializer,  # Define o corpo da requisição
         responses={
             200: openapi.Response(
-                description="Success response from ChatGPT",
-                examples={
-                    "application/json": {
-                        "chat_id": "123e4567-e89b-12d3-a456-426614174000",
-                        "message": "User's message here.",
-                        "response": "ChatGPT's response here."
+                'Successful response from ChatGPT',
+                openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'chat_uuid': openapi.Schema(type=openapi.TYPE_STRING, example="3fa85f64-5717-4562-b3fc-2c963f66afa7"),
+                        'message': openapi.Schema(type=openapi.TYPE_STRING, example="Olá!"),
+                        'response': openapi.Schema(type=openapi.TYPE_STRING, example="Olá, como posso ajudar?")
                     }
-                }
+                )
             ),
-            400: openapi.Response(
-                description="Bad Request",
-                examples={
-                    "application/json": {
-                        "chat_uuid": ["chat_uuid must be a valid UUID."],
-                        "message": ["message cannot be empty."]
-                    }
-                }
-            ),
-            500: openapi.Response(
-                description="Internal Server Error",
-                examples={
-                    "application/json": {
-                        "error": "Detailed error message here."
-                    }
-                }
-            )
+            400: "Bad Request",
         },
         tags=["ChatGPT"],  # Categoria ou tag da API no Swagger
         operation_summary="Get ChatGPT Response",  # Resumo da operação
@@ -200,11 +185,14 @@ class ChatGPTAPIView(APIView):
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        chat_id = serializer.validated_data.get('chat_id')
+        chat_uuid = serializer.validated_data.get('chat_uuid')
         new_message = serializer.validated_data.get('message')
 
+        if not os.path.exists(CHAT_DIR):
+            os.makedirs(CHAT_DIR)
+
         # Define the path for the current chat file
-        chat_file_path = os.path.join(CHAT_DIR, f'{chat_id}.json')
+        chat_file_path = os.path.join(CHAT_DIR, f'{chat_uuid}.json')
 
         # Load previous messages if the chat file exists
         if os.path.exists(chat_file_path):
@@ -217,24 +205,25 @@ class ChatGPTAPIView(APIView):
                 {"role": "system", "content": PROMPT}
             ]
 
-        # Inclui mensagens anteriores no contexto, caso fornecidas
         if previous_messages:
-            messages.extend(previous_messages)
+            messages = previous_messages
 
         # Adiciona a nova mensagem do usuário ao contexto
         messages.append({"role": "user", "content": new_message})
 
         try:
             # Faz a chamada para a API do ChatGPT usando o modelo `gpt-3.5-turbo`
-            response = openai.ChatCompletion.create(
-                model="gpt-4o",
-                messages=messages,
-                max_tokens=150,
-                temperature=0.7,
+
+            client = openai.Client(
+                api_key=os.getenv('OPENAI_API_KEY')
             )
 
-            # Extrai a resposta gerada
-            chatgpt_response = response.choices[0].message['content'].strip()
+            response = client.chat.completions.create(
+                messages=messages,
+                model="gpt-3.5-turbo",
+            )
+
+            chatgpt_response = response.choices[0].message.content.strip()
 
             # Atualiza as mensagens com a resposta do assistente
             updated_messages = messages + \
@@ -246,7 +235,7 @@ class ChatGPTAPIView(APIView):
 
             # Retorna a resposta e o contexto atualizado
             return Response({
-                "chat_id": chat_id,
+                "chat_uuid": chat_uuid,
                 "message": new_message,
                 "response": chatgpt_response,
             }, status=status.HTTP_200_OK)
