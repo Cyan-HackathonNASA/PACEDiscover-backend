@@ -65,3 +65,16 @@ class ImageURLSerializer(serializers.Serializer):
                 "Invalid date combination provided.")
 
         return data
+class ChatMessageSerializer(serializers.Serializer):
+    chat_id = serializers.IntegerField()
+    message = serializers.CharField(max_length=1000)
+
+    def validate_chat_id(self, value):
+        if value <= 0:
+            raise serializers.ValidationError("chat_id must be a positive integer.")
+        return value
+
+    def validate_message(self, value):
+        if not value.strip():
+            raise serializers.ValidationError("message cannot be empty.")
+        return value
