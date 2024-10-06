@@ -327,3 +327,4 @@ cython_debug/
 .test
 
 data/web
+djangoapp/api/chats/
