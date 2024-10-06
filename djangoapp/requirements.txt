@@ -5,3 +5,4 @@ drf-yasg>=1.21.7,<1.22
 setuptools>=75.1.0,<75.2
 python-dotenv>=1.0.1,<1.1
 whitenoise>=6.7.0,<6.8
+openai>=1.51.0,<1.52
