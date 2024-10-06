@@ -138,10 +138,10 @@ class ProductView(APIView):
 
     def get(self, request):
         products = [
-            {
-                'id': '59,188',
-                'name': 'Aerosol optical thickness at 1610 nm, Deep Blue algorithm',
-            },
+            # {
+            #     'id': '59,188',
+            #     'name': 'Aerosol optical thickness at 1610 nm, Deep Blue algorithm',
+            # },
             {
                 'id': '64,255',
                 'name': 'Phytoplankton Carbon',
