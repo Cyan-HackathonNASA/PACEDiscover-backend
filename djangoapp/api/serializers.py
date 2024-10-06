@@ -1,7 +1,7 @@
 from rest_framework import serializers
 import calendar
 from datetime import datetime
-
+import uuid
 
 class ImageURLSerializer(serializers.Serializer):
 
@@ -66,12 +66,14 @@ class ImageURLSerializer(serializers.Serializer):
 
         return data
 class ChatMessageSerializer(serializers.Serializer):
-    chat_id = serializers.IntegerField()
+    chat_uuid = serializers.UUIDField()
     message = serializers.CharField(max_length=1000)
 
-    def validate_chat_id(self, value):
-        if value <= 0:
-            raise serializers.ValidationError("chat_id must be a positive integer.")
+    def validate_chat_uuid(self, value):
+        try:
+            uuid.UUID(str(value))
+        except ValueError:
+            raise serializers.ValidationError("chat_uuid must be a valid UUID.")
         return value
 
     def validate_message(self, value):
