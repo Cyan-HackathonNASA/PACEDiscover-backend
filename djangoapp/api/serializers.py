@@ -3,7 +3,8 @@ import calendar
 from datetime import datetime
 import uuid
 
-class ImageURLSerializer(serializers.Serializer):
+
+class ImageSerializer(serializers.Serializer):
 
     product_choices = [
         # AER_DB Group
@@ -65,6 +66,8 @@ class ImageURLSerializer(serializers.Serializer):
                 "Invalid date combination provided.")
 
         return data
+
+
 class ChatMessageSerializer(serializers.Serializer):
     chat_uuid = serializers.UUIDField()
     message = serializers.CharField(max_length=1000)
@@ -73,7 +76,8 @@ class ChatMessageSerializer(serializers.Serializer):
         try:
             uuid.UUID(str(value))
         except ValueError:
-            raise serializers.ValidationError("chat_uuid must be a valid UUID.")
+            raise serializers.ValidationError(
+                "chat_uuid must be a valid UUID.")
         return value
 
     def validate_message(self, value):

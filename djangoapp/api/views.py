@@ -1,33 +1,32 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from api.serializers import ImageURLSerializer, ChatMessageSerializer
+from api.serializers import ImageSerializer, ChatMessageSerializer
 import calendar
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 import openai
 import os
 import json
-import random
-import string
-# import requests
+import requests
+import base64
 
 CHAT_DIR = os.path.join(os.path.dirname(__file__), 'chats')
 PROMPT = "Teste"
 
 
-class ImageURLView(APIView):
+class ImageView(APIView):
     authentication_classes = []
     permission_classes = []
 
     @swagger_auto_schema(
-        operation_description="Get image URL based on the provided query parameters.",
-        query_serializer=ImageURLSerializer,
+        operation_description="Get image base64 string based on the provided query parameters.",
+        query_serializer=ImageSerializer,
         responses={
             200: openapi.Response('Successful response', openapi.Schema(
                 type=openapi.TYPE_OBJECT,
                 properties={
-                    'url': openapi.Schema(type=openapi.TYPE_STRING, description='Generated image URL')
+                    'image_base64': openapi.Schema(type=openapi.TYPE_STRING)
                 }
             )),
             400: "Bad Request",
@@ -35,16 +34,23 @@ class ImageURLView(APIView):
         }
     )
     def get(self, request):
-        serializer = ImageURLSerializer(data=request.query_params)
+        serializer = ImageSerializer(data=request.query_params)
 
         if serializer.is_valid():
             url = self._generate_pace_url(serializer.validated_data)
 
-            # response = requests.get(url)
-            # if response.status_code == 404:
-            #     return Response(status=status.HTTP_404_NOT_FOUND)
+            try:
+                response = requests.get(url)
+                if response.status_code == 404:
+                    return Response(status=status.HTTP_404_NOT_FOUND)
 
-            return Response({"url": url}, status=status.HTTP_200_OK)
+                encoded_string = base64.b64encode(
+                    response.content).decode('utf-8')
+
+                return Response({"image_base64": encoded_string}, status=status.HTTP_200_OK)
+            except requests.exceptions.RequestException as e:
+                return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def _generate_pace_url(self, data: dict) -> str | None:
