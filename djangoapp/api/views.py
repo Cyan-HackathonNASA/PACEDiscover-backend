@@ -1,0 +1,151 @@
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from api.serializers import ImageURLSerializer
+import calendar
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
+# import requests
+
+
+class ImageURLView(APIView):
+    authentication_classes = []
+    permission_classes = []
+
+    @swagger_auto_schema(
+        operation_description="Get image URL based on the provided query parameters.",
+        query_serializer=ImageURLSerializer,
+        responses={
+            200: openapi.Response('Successful response', openapi.Schema(
+                type=openapi.TYPE_OBJECT,
+                properties={
+                    'url': openapi.Schema(type=openapi.TYPE_STRING, description='Generated image URL')
+                }
+            )),
+            400: "Bad Request",
+            404: "Not Found",
+        }
+    )
+    def get(self, request):
+        serializer = ImageURLSerializer(data=request.query_params)
+
+        if serializer.is_valid():
+            url = self._generate_pace_url(serializer.validated_data)
+
+            # response = requests.get(url)
+            # if response.status_code == 404:
+            #     return Response(status=status.HTTP_404_NOT_FOUND)
+
+            return Response({"url": url}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def _generate_pace_url(self, data: dict) -> str | None:
+
+        BASE_URL = 'https://oceancolor.gsfc.nasa.gov/showimages/PACE_OCI/IMAGES/'
+
+        year = data.get('year')
+        month = data.get('month')
+        res = data.get("res")
+        period = data.get('period')
+        product = self._set_product(data.get('product'))
+
+        if period == 'daily':
+            day = data.get('day')
+            return (f'{BASE_URL}{product[0]}/L3/{year}/{month}{day}/PACE_OCI.{year}{month}{day}.L3m.DAY.{product[1]}.V2_0.{product[2]}.{res}.NRT.nc.png')
+
+        if period == 'monthly':
+            _, last_day = calendar.monthrange(int(year), int(month))
+            return f'{BASE_URL}{product[0]}/L3/{year}/{month}01/PACE_OCI.{year}{month}01_{year}{month}{last_day}.L3m.MO.{product[1]}.V2_0.{product[2]}.{res}.NRT.nc.png'
+
+        if period == 'annual':
+            return f'{BASE_URL}{product[0]}/L3/{year}/0101/PACE_OCI.{year}0101_{year}1231.L3m.YR.{product[1]}.{product[2]}.{res}.nc.png'
+
+        raise ValueError("Invalid period provided.")
+
+    def _set_product(self, product: str) -> tuple:
+        match product:
+
+            # AER_DB Group
+            case '59,188':
+                return 'AER_DB', 'AER_DBOCEAN', 'aot_1610_db'
+
+            # CARBON Group
+            case '64,255':
+                return 'CARBON', 'CARBON', 'carbon_phyto'
+
+            # CHL Group
+            case '5,6':
+                return 'CHL', 'CHL', 'chlor_a'
+
+            # POC Group
+            case '10,36':
+                return 'POC', 'POC', 'poc'
+
+            case _:
+                raise ValueError("Invalid product code provided.")
+
+
+class ProductView(APIView):
+    authentication_classes = []
+    permission_classes = []
+
+    def get(self, request):
+        products = [
+            {
+                'id': '59,188',
+                'name': 'Aerosol optical thickness at 1610 nm, Deep Blue algorithm',
+            },
+            {
+                'id': '64,255',
+                'name': 'Phytoplankton Carbon',
+            },
+            {
+                'id': '5,6',
+                'name': 'Chlorophyll concentration'
+            },
+            {
+                'id': '10,36',
+                'name': 'Particulate Organic Carbon'
+            }
+        ]
+        return Response(products, status=status.HTTP_200_OK)
+
+
+class ResolutionView(APIView):
+    authentication_classes = []
+    permission_classes = []
+
+    # Get Resolution Choices View
+    def get(self, request):
+        resolutions = [
+            {
+                'name': '0.1-deg',
+            },
+            {
+                'name': '4km',
+            },
+            {
+                'name': '9km'
+            },
+        ]
+        return Response(resolutions, status=status.HTTP_200_OK)
+
+
+class PeriodView(APIView):
+    authentication_classes = []
+    permission_classes = []
+
+    # Get Resolution Choices View
+    def get(self, request):
+        periods = [
+            {
+                'name': 'daily',
+            },
+            {
+                'name': 'monthly',
+            },
+            {
+                'name': 'annual'
+            },
+        ]
+        return Response(periods, status=status.HTTP_200_OK)
