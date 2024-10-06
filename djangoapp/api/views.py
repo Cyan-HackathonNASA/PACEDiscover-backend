@@ -14,6 +14,8 @@ import string
 
 CHAT_DIR = os.path.join(os.path.dirname(__file__), 'chats')
 PROMPT = "Teste"
+
+
 class ImageURLView(APIView):
     authentication_classes = []
     permission_classes = []
@@ -157,8 +159,42 @@ class PeriodView(APIView):
         return Response(periods, status=status.HTTP_200_OK)
 
 
-
 class ChatGPTAPIView(APIView):
+    @swagger_auto_schema(
+        operation_description="Get response through chatgpt.",
+        request_body=ChatMessageSerializer,  # Define o corpo da requisição
+        responses={
+            200: openapi.Response(
+                description="Success response from ChatGPT",
+                examples={
+                    "application/json": {
+                        "chat_id": "123e4567-e89b-12d3-a456-426614174000",
+                        "message": "User's message here.",
+                        "response": "ChatGPT's response here."
+                    }
+                }
+            ),
+            400: openapi.Response(
+                description="Bad Request",
+                examples={
+                    "application/json": {
+                        "chat_uuid": ["chat_uuid must be a valid UUID."],
+                        "message": ["message cannot be empty."]
+                    }
+                }
+            ),
+            500: openapi.Response(
+                description="Internal Server Error",
+                examples={
+                    "application/json": {
+                        "error": "Detailed error message here."
+                    }
+                }
+            )
+        },
+        tags=["ChatGPT"],  # Categoria ou tag da API no Swagger
+        operation_summary="Get ChatGPT Response",  # Resumo da operação
+    )
     def post(self, request):
         serializer = ChatMessageSerializer(data=request.data)
         if not serializer.is_valid():
@@ -191,17 +227,18 @@ class ChatGPTAPIView(APIView):
         try:
             # Faz a chamada para a API do ChatGPT usando o modelo `gpt-3.5-turbo`
             response = openai.ChatCompletion.create(
-            model="gpt-4o",
-            messages=messages,
-            max_tokens=150,
-            temperature=0.7,
+                model="gpt-4o",
+                messages=messages,
+                max_tokens=150,
+                temperature=0.7,
             )
 
             # Extrai a resposta gerada
             chatgpt_response = response.choices[0].message['content'].strip()
 
             # Atualiza as mensagens com a resposta do assistente
-            updated_messages = messages + [{"role": "assistant", "content": chatgpt_response}]
+            updated_messages = messages + \
+                [{"role": "assistant", "content": chatgpt_response}]
 
             # Salva as mensagens atualizadas no arquivo de chat
             with open(chat_file_path, 'w') as chat_file:
@@ -209,9 +246,9 @@ class ChatGPTAPIView(APIView):
 
             # Retorna a resposta e o contexto atualizado
             return Response({
-            "chat_id": chat_id,
-            "message": new_message,
-            "response": chatgpt_response,
+                "chat_id": chat_id,
+                "message": new_message,
+                "response": chatgpt_response,
             }, status=status.HTTP_200_OK)
 
         except Exception as e:
